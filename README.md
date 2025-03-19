@@ -3,8 +3,6 @@
 ## Description
 This is a Python code obfuscator and encryptor that allows obfuscating variables and functions in a Python script before encrypting it using a hidden XOR key.
 
-This script was developed by **tay** and provides a secure way to protect source code by renaming variable and function names, followed by XOR encryption with a Base64-encoded key.
-
 ---
 
 ## Features
