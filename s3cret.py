@@ -43,8 +43,11 @@ def generate_random_name(prefix):
     return f"{prefix}_{random.randint(1000, 9999)}"
 
 def obfuscate_code(code):
+    import_pattern = re.compile(r'^\s*(import|from)\s+([\w\.]+)', re.MULTILINE)
     function_pattern = re.compile(r'\bdef (\w+)\(')
-    variable_pattern = re.compile(r'^\s*(\w+)\s*=', re.MULTILINE)
+    variable_pattern = re.compile(r'^\s*(\w+)\s*=\s*(?!import|from|\[|\{)', re.MULTILINE)
+
+    imported_modules = set(match.group(2).split('.')[0] for match in import_pattern.finditer(code))
 
     functions = function_pattern.findall(code)
     variables = variable_pattern.findall(code)
@@ -52,11 +55,12 @@ def obfuscate_code(code):
     rename_map = {}
 
     for func in functions:
-        new_name = generate_random_name("tay_func")
-        rename_map[func] = new_name
+        if func not in imported_modules:
+            new_name = generate_random_name("tay_func")
+            rename_map[func] = new_name
 
     for var in variables:
-        if var not in rename_map and var not in ["True", "False", "None"]:
+        if var not in rename_map and var not in ["True", "False", "None"] and var not in imported_modules:
             new_name = generate_random_name("tay_var")
             rename_map[var] = new_name
 
