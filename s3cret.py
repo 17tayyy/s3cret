@@ -5,6 +5,8 @@ import signal
 import base64
 import random
 import re
+import string
+import argparse
 from termcolor import colored
 
 def def_handler(sig, frame):
@@ -42,6 +44,40 @@ def get_hidden_key():
 def generate_random_name(prefix):
     return f"{prefix}_{random.randint(1000, 9999)}"
 
+def is_safe_to_replace(variable, code):
+    string_pattern = re.compile(rf'(["\'])(.*?)\b{variable}\b(.*?)\1')
+    if string_pattern.search(code):
+        return False
+
+    critical_libraries = ["ctypes", "winreg", "Fernet", "uuid", "requests"]
+    for lib in critical_libraries:
+        if re.search(rf'\b{lib}\.\b{variable}\b', code):
+            return False
+
+    protected_arguments = ["font"]
+    function_argument_pattern = re.compile(rf'\b(?:ImageFont\.truetype|ImageDraw\.text)\(.*?\b{variable}\b=', re.MULTILINE)
+    if variable in protected_arguments or function_argument_pattern.search(code):
+        return False
+
+    if re.search(rf'requests\.(post|get)\(.*?\b{variable}\b=', code):
+        return False
+
+    if re.search(rf'winreg\.SetValueEx\([^,]+, ["\']{variable}["\']', code):
+        return False
+
+    if re.search(rf'subprocess\.run\(.*?\b{variable}\b=', code):
+        return False
+
+    if re.search(rf'ctypes\.windll\.user32\.SystemParametersInfoW\(.*,.*,.*?\b{variable}\b', code):
+        return False
+
+    sensitive_values = ["bot_token", "chat_id", "api_key", "url", "secret"]
+    if variable in sensitive_values:
+        return False
+    
+
+    return True
+
 def obfuscate_code(code):
     import_pattern = re.compile(r'^\s*(?:import|from)\s+([\w\.]+)', re.MULTILINE)
     function_pattern = re.compile(r'\bdef (\w+)\(')
@@ -58,12 +94,12 @@ def obfuscate_code(code):
     rename_map = {}
 
     for func in functions:
-        if func not in imported_modules:
+        if func not in imported_modules and is_safe_to_replace(func, code):
             new_name = generate_random_name("tay_func")
             rename_map[func] = new_name
 
     for var in variables:
-        if var not in rename_map and var not in imported_modules and var not in ["True", "False", "None"]:
+        if var not in rename_map and var not in imported_modules and is_safe_to_replace(var, code):
             new_name = generate_random_name("tay_var")
             rename_map[var] = new_name
 
@@ -72,14 +108,12 @@ def obfuscate_code(code):
 
     return code, rename_map
 
-def encode_file_to_python_script():
+def encode_file_to_python_script(input_file, output_file, obfuscate):
     print_banner()
-    input_file = input(colored("[+] Enter the path of the input file: ", 'green')).strip()
-    output_file = input(colored("[+] Enter the name of the output file: ", 'green')).strip()
 
     if not os.path.exists(input_file):
         print(colored(f"[!] Error: No file named {input_file}.", 'red'))
-        return
+        sys.exit(1)
 
     try:
         key = get_hidden_key()
@@ -87,20 +121,28 @@ def encode_file_to_python_script():
         with open(input_file, "r", encoding="utf-8") as file:
             original_code = file.read()
 
-        obfuscated_code, rename_map = obfuscate_code(original_code)
+        if obfuscate:
+            obfuscated_code, rename_map = obfuscate_code(original_code)
 
-        debug_file = "debug_obfuscated.py"
-        with open(debug_file, "w", encoding="utf-8") as debug_out:
-            debug_out.write(obfuscated_code)
+            debug_file = "debug_obfuscated.py"
+            with open(debug_file, "w", encoding="utf-8") as debug_out:
+                debug_out.write(obfuscated_code)
 
-        print(colored(f"\n[!] Obfuscated code saved in: {debug_file} - Check it before start.", 'green'))
+            print(colored(f"\n[!] Obfuscated code saved in: {debug_file}", 'green'))
+            print(colored("[!] Please check it to make sure it's correct.", 'yellow'))
 
-        confirm = input(colored("[?] Is the code correct? (y/n): ", 'green')).strip().lower()
-        if confirm != "y":
-            print(colored("\n[!] Quitting the obfuscation.\n", 'red'))
-            return
+            confirm = input(colored("[?] Do you want to continue with encryption? (y/n): ", 'cyan')).strip().lower()
 
-        os.remove(debug_file)
+            if confirm != "y":
+                print(colored("[!] Deleting debug file and exiting.", 'red'))
+                os.remove(debug_file)
+                sys.exit(1)
+            
+            os.remove(debug_file)
+        else:
+            obfuscated_code = original_code
+            print(colored("\n[!] Code will NOT be obfuscated.", 'yellow'))
+
         data = obfuscated_code.encode("utf-8")
         encrypted_data = xor_crypt(data, key)
 
@@ -136,10 +178,19 @@ def encode_file_to_python_script():
 
             py_file.write("exec(tay_6(tay).decode('utf-8'))\n")
 
-        print(colored(f"\n[+] Python file ofuscated: {output_file}", 'green'))
+        print(colored(f"\n[+] Python file encrypted: {output_file}", 'green'))
 
     except Exception as e:
         print(colored(f"\n[!] Error Processing the file: {e}", 'red'))
+        sys.exit(1)
 
 if __name__ == "__main__":
-    encode_file_to_python_script()
+    parser = argparse.ArgumentParser(description="Python Code Obfuscator & Encryptor")
+    
+    parser.add_argument("--input", required=True, help="Path to the input Python script")
+    parser.add_argument("--output", required=True, help="Path to the output encrypted file")
+    parser.add_argument("--obfuscate", action="store_true", help="Enable code obfuscation before encryption (Change function and variable names, may break code)")
+
+    args = parser.parse_args()
+
+    encode_file_to_python_script(args.input, args.output, args.obfuscate)
