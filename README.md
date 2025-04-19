@@ -11,8 +11,7 @@ This is a Python code obfuscator and encryptor that allows obfuscating variables
 
 ![image](https://github.com/user-attachments/assets/68748421-aa0b-4150-9594-80b6a7aa8dcb)
 
-
-
+![image](https://github.com/user-attachments/assets/2a24fea8-630d-437e-a0e6-70077612b8b1)
 
 ---
 ## Features
