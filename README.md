@@ -2,7 +2,6 @@
 
 ## Description
 This is a Python code obfuscator and encryptor that allows obfuscating variables and functions in a Python script before encrypting it using a hidden XOR key.
-This tool makes able to bypass windows defender
 
 ---
 
@@ -10,6 +9,7 @@ This tool makes able to bypass windows defender
 - **Code obfuscation**: Renames variables and functions to make them harder to understand.
 - **XOR encryption**: Protects code from direct inspection.
 - **Automated structure**: Detects imports and elements that should not be replaced.
+- **Bypass Windows Defender**
 
 ---
 
