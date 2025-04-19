@@ -5,11 +5,21 @@ This is a Python code obfuscator and encryptor that allows obfuscating variables
 
 ---
 
+## Images
+
+![image](https://github.com/user-attachments/assets/e74e897a-c38b-4122-91a5-fe9efb089888)
+
+![image](https://github.com/user-attachments/assets/68748421-aa0b-4150-9594-80b6a7aa8dcb)
+
+
+
+
+---
 ## Features
 - **Code obfuscation**: Renames variables and functions to make them harder to understand.
 - **XOR encryption**: Protects code from direct inspection.
 - **Automated structure**: Detects imports and elements that should not be replaced.
-- **Bypass Windows Defender**
+- **Bypass Windows Defender and Virus total**
 
 ---
 
